@@ -1,0 +1,48 @@
+{
+  "name": "uncore",
+  "version": "0.1.0",
+  "description": "Tiny app and state container",
+  "main": "index.js",
+  "directories": {
+    "example": "example"
+  },
+  "scripts": {
+    "test": "tape \"test/*\"",
+    "build-example": "cd example/react; rollup -c rollup.config.js -w"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Frando/uncore.git"
+  },
+  "keywords": [
+    "state",
+    "immutable",
+    "react",
+    "rpc"
+  ],
+  "author": "Franz Heinzmann",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Frando/uncore/issues"
+  },
+  "homepage": "https://github.com/Frando/uncore#readme",
+  "dependencies": {
+    "avvio": "^6.0.0",
+    "hyperpc": "^2.1.0",
+    "immer": "^1.7.2",
+    "websocket-stream": "^5.1.2"
+  },
+  "devDependencies": {
+    "depj": "^1.0.3",
+    "react": "^16.5.2",
+    "react-dom": "^16.5.2",
+    "rollup": "^0.66.6",
+    "rollup-plugin-buble": "^0.19.4",
+    "rollup-plugin-commonjs": "^9.2.0",
+    "rollup-plugin-node-builtins": "^2.1.2",
+    "rollup-plugin-node-globals": "^1.4.0",
+    "rollup-plugin-node-resolve": "^3.4.0",
+    "rollup-plugin-replace": "^2.1.0",
+    "standard": "^12.0.1"
+  }
+}
