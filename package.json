@@ -8,7 +8,8 @@
   },
   "scripts": {
     "test": "tape \"test/*\"",
-    "build-example": "cd example/react; rollup -c rollup.config.js -w"
+    "build-example": "cd example/react; rollup -c rollup.config.js -w",
+    "run-example": "node example/server.js"
   },
   "repository": {
     "type": "git",
@@ -33,7 +34,6 @@
     "websocket-stream": "^5.1.2"
   },
   "devDependencies": {
-    "depj": "^1.0.3",
     "react": "^16.5.2",
     "react-dom": "^16.5.2",
     "rollup": "^0.66.6",

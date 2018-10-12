@@ -7,9 +7,8 @@ start()
 
 function start () {
   const app = uncore()
-  app.register(rpc, { url: 'ws://localhost:10001'})
+  app.register(rpc, { url: 'ws://localhost:10001' })
   app.use(counterPlugin)
-  // app.use(double)
   boot(app)
   return app
 }
@@ -26,13 +25,6 @@ async function boot (app) {
     console.log('ERROR', e)
   }
 }
-
-// async function double (app) {
-//   const store = app.getStore('counter')
-//   store.subscribe(sub, s => s.counter)
-//   function sub (cnt, store) {
-//   }
-// }
 
 async function counterPlugin (app) {
   const store = counterStore()
