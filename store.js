@@ -1,21 +1,29 @@
 let produce = require('immer')
-let logger = require('./logger')
+let logger = require('./lib/logger')
+const util = require('./lib/util')
 
 // I hate the inconsistencies between es modules via rollup and require in node...
 // it's really hard these days to write isomorphic code.
 if (typeof produce !== 'function') produce = produce.produce
 if (typeof logger !== 'function') logger = logger.default
 
+const META = Symbol('ucore-store-meta')
+
 module.exports = makeStore
 
-function makeStore (initialState, actions, select, opts = {}) {
+function makeStore (initialState, actions = {}, select = {}, opts = {}) {
   const isEqual = opts.compareFunc || defaultCompareFunc
-  const store = {}
   let subscribers = []
   let state = initialState
 
+  const store = {
+    actions: {},
+    select: {},
+    name: opts.name
+  }
+
   store.subscribe = (fn, select, ...args) => {
-    subscribers.push({ fn, select, args})
+    subscribers.push({ fn, select, args })
     return () => store.unsubscribe(fn)
   }
 
@@ -32,7 +40,6 @@ function makeStore (initialState, actions, select, opts = {}) {
   }
 
   store.setState = (newState, meta) => {
-    if (newState === state) return log(false)
     let prevState = state
     state = newState
     meta.subscribers = _callSubscribers(newState, prevState)
@@ -40,38 +47,27 @@ function makeStore (initialState, actions, select, opts = {}) {
     logger(newState, prevState, meta)
   }
 
+  store.select = (select, ...args) => _select(state, select, ...args)
 
-  store.select = (select, ...args) => {
-    return _select(state, select, ...args)
-  }
+  store.decorate = util.makeDecorate(store, 'store')
 
-  store.decorate = (prop, value) => {
-    if (store[prop] === value) return
-    if (store.hasOwnProperty(name)) throw new Error(`Cannot decorate ${name}: Already taken.`)
-    store[prop] = value
-  }
+  Object.keys(actions).forEach(name => {
+    let action = _makeAction(actions[name], name)
+    store.decorate(name, action, 'action')
+    store.actions[name] = store[name]
+  })
 
-  if (actions) {
-    Object.keys(actions).forEach(name => {
-      if (store.hasOwnProperty(name)) throw new Error('Cannot define action %s: Already registered', name)
-      let fn = actions[name]
-      store[name] = _makeAction(fn, name)
-    })
-  }
-
-  if (select) {
-    Object.keys(select).forEach(name => {
-      // store.select[name] = (...args) => select[name](state, ...args)
-      store.select[name] = select[name]
-    })
-  }
+  Object.keys(select).forEach(name => {
+    store.decorate(name, select[name], 'select')
+    store.select[name] = store[name]
+  })
 
   return store
 
   function _makeAction (fn, name) {
     return function (...args) {
-      let _takeDraft = true
-      let _patches = []
+      let takeDraft = true
+      let patches = []
       let set = fn => store.set(fn, { name, args })
 
       let maybeNewState = produce(state, (draft) => {
@@ -79,27 +75,32 @@ function makeStore (initialState, actions, select, opts = {}) {
 
         if (typeof res === 'function') {
           res(set, { select, ...store })
-          _takeDraft = false
+          takeDraft = false
         }
-      }, p => _patches.push(p))
+      }, p => patches.push(p))
 
-      if (_takeDraft) {
-        store.setState(maybeNewState, { name: name, patches: _patches })
+      if (takeDraft) {
+        store.setState(maybeNewState, { name: name, patches: patches })
       }
     }
   }
 
   function _select (state, select, ...args) {
-    if (!select) return state
-    if (typeof select === 'function') return select(state, ...args)
+    if (!select) {
+      return state
+    }
+    if (Array.isArray(select)) {
+      return select.map(sel => _select(state, sel, ...args))
+    }
+    if (typeof select === 'function') {
+      return select(state, ...args)
+    }
     if (typeof select === 'string') {
-      let ret = store.select[select](state, ...args)
-      return ret
+      return store.select[select](state, ...args)
     }
   }
 
   function _callSubscribers (newState, oldState) {
-    _active = true
     let _subscribers = []
     subscribers.forEach(({ fn, select, args }) => {
       let oldSection = _select(oldState, select, ...args)
@@ -109,7 +110,6 @@ function makeStore (initialState, actions, select, opts = {}) {
         _subscribers.push(fn)
       }
     })
-    _active = false
     return _subscribers
   }
 }

@@ -1,9 +1,21 @@
 import React from 'react'
+import shallowEqual from 'shallowequal'
 
-export class Subscriber extends React.PureComponent {
+const cleanProps = (props) => {
+  let {
+    children,
+    select,
+    store,
+    ...rest
+  } = props
+  return rest
+}
+
+export class Subscriber extends React.Component {
   constructor (props) {
     super()
-    this.state = { state: props.store.select(props.select) }
+    const sel = props.store.select(props.select)
+    this.state = { sel }
     this.onUpdate = this.onUpdate.bind(this)
   }
 
@@ -15,15 +27,19 @@ export class Subscriber extends React.PureComponent {
     this.props.store.unsubscribe(this.onUpdate)
   }
 
-  onUpdate (state) {
-    if (this.props.select === 'firstNode') console.log('UPPPPPPPPPPPPPPPPPPP', state)
-    this.setState({ state })
+  onUpdate (sel) {
+    this.setState({ sel })
+  }
+
+  shouldComponentUpdate (nextProps, nextState) {
+    if (shallowEqual(this.state.sel, nextState.sel)) return false
+    return true
   }
 
   render () {
     const { children, store } = this.props
-    const { state } = this.state
-    return typeof children === 'function' ? children(state, store) : children
+    const { sel } = this.state
+    return typeof children === 'function' ? children(sel, store) : children
   }
 }
 

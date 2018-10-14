@@ -1,40 +1,35 @@
-const uncore = require('../src')
-const makeStore = require('../src/makeStore')
-const rpc = require('../src/rpc/ws-client')
+const ucore = require('..')
+const makeStore = require('../store')
+const rpc = require('../rpc/client')
 
-module.exports = start
-start()
+module.exports = boot
 
-function start () {
-  const app = uncore()
+function boot () {
+  const app = ucore()
+
   app.register(rpc, { url: 'ws://localhost:10001' })
   app.use(counterPlugin)
-  boot(app)
+
   return app
 }
 
-async function boot (app) {
-  try {
-    await app.ready()
-    const counter = app.getStore('counter')
-    counter.increment()
-    counter.increment()
-    counter.loadNode()
-    counter.loadNode()
-  } catch (e) {
-    console.log('ERROR', e)
-  }
-}
-
-async function counterPlugin (app) {
+function counterPlugin (app, opts, done) {
   const store = counterStore()
+
   app.addStore('counter', store)
+
+  app.reply('status', async req => store.addStatus(req))
+
+  store.addStatus('init!')
+
+  done()
 }
 
 function counterStore () {
   const initialState = {
     counter: 0,
-    nodes: []
+    nodes: [],
+    status: []
   }
 
   const increment = () => set => set((draft) => {
@@ -42,29 +37,42 @@ function counterStore () {
   })
 
   const loadNode = () => (set, { core }) => {
-    // const node = await core.fetch('node')
-    // update(draft => void draft.nodes.push(node))
-    core.fetch('node')
+    core.request('node')
       .then(node => set(draft => void draft.nodes.push(node)))
   }
 
   const actions = {
     increment,
-    loadNode
+    loadNode,
+    // addStatus: (status) => {
+    //   this.draft.status.push(status)
+    // }
+    addStatus: (status) => set => set(draft => void draft.status.push(status))
   }
 
   const select = {
     firstNode: state => {
-      let node = state.nodes[0]
-      console.log('getFirstNode!', node)
-      return node
+      return state.nodes[0]
     },
     lastNode: state => {
       return state.nodes[state.nodes.length - 1]
-    }
+    },
+    debouncedStatus: debounceArray(state => state.status, 10)
   }
 
-  const store = makeStore(initialState, actions, select)
+  return makeStore(initialState, actions, select)
+}
 
-  return store
+function debounceArray(fn, pagesize) {
+  let size = 0
+  let cache = []
+  return (state) => {
+    let arr = fn(state)
+    if (arr.length > size + pagesize) {
+      cache.push(arr.slice(size, arr.length).join(', '))
+      size = arr.length
+    }
+    return [...cache]
+  }
+
 }

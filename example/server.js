@@ -1,34 +1,45 @@
 const http = require('http')
-const server = http.createServer(handle)
 
-const uncore = require('../src')
+const ucore = require('..')
 
-const rpc = require('../src/rpc/ws-server')
+const rpc = require('../rpc/server')
 
-const app = uncore()
+boot ()
 
-app.register(rpc, { server })
+async function boot () {
+  const server = http.createServer(handle)
+  const app = ucore()
 
-app.use(routes)
+  app.register(rpc, { server })
+  app.use(routes)
 
-app.ready((err) => {
-  if (err) console.log('ERROR', err)
-  else server.listen(10001, () => console.log('Server listening on port 10001.'))
-})
+  try {
+    await app.ready()
+    server.listen(10001, () => console.log('Server listening on port 10001.'))
 
-app.start()
+    // let i = 0
+    // setInterval(() => {
+    //   i++
+    //   app.request('status', 'hi, ' + i)
+    //   console.log('make request', i)
+    // }, 200)
 
-function routes (app, opts, next) {
-  app.take('test', async (req, res) => {
+  } catch (e) {
+    console.log('Startup error: ', e)
+  }
+}
+
+function routes (app, opts, done) {
+  app.reply('test', async (req, res) => {
     return req.toUpperCase() + ' world!'
   })
 
   let cnt = 0
-  app.take('node', async req => {
+  app.reply('node', async req => {
     return 'node-' + cnt++
   })
 
-  next()
+  done()
 }
 
 const fs = require('fs')

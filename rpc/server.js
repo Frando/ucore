@@ -2,7 +2,7 @@ const ws = require('websocket-stream')
 const makeRpcPlugin = require('./shared')
 
 module.exports = {
-  name: 'rpcServer',
+  name: 'rpc-server',
   plugin: makeRpcPlugin(websocketServer) 
 }
 

@@ -1,5 +1,5 @@
 const tape = require('tape')
-const makeStore = require('../src/makeStore')
+const makeStore = require('../store')
 
 const initialState = {
   counter: 0,
@@ -9,7 +9,7 @@ const initialState = {
 const appendFirstNode = newNode => (set, { select }) => {
   set(draft => {
     let node = select.firstNode(draft)
-    for (key in newNode) {
+    for (let key in newNode) {
       node[key] = newNode[key]
     }
   })
@@ -24,8 +24,8 @@ const addNodeAsync = () => async set => {
   set(draft => void (draft.nodes.push(node)))
 }
 
-const actions = ({
-  addNode: node => set => {
+const actions = {
+  addNode: node => (set, store) => {
     set(draft => {
       draft.nodes.push(node)
     })
@@ -35,7 +35,7 @@ const actions = ({
   addNodeAsync,
 
   increment () { this.draft.counter++ }
-})
+}
 
 const select = {
   firstNode: state => state.nodes.length ? state.nodes[0] : null,
@@ -44,22 +44,20 @@ const select = {
   nodes: state => state.nodes
 }
 
-const store = makeStore(initialState, actions, select)
+const store = makeStore(initialState, actions, select, { name: 'testStore' })
 
 tape('basics', t => {
   console.log('STATE', store.get())
 
   let i = 1
   const subFirst = (node) => {
-    console.log('SUBFirst', i, node)
-    if (i === 1) t.deepEqual(node, {id: 'hello'})
-    if (i === 2) t.deepEqual(node, {id: 'hello', foo: 'bazz!'})
+    if (i === 1) t.deepEqual(node, { id: 'hello' })
+    if (i === 2) t.deepEqual(node, { id: 'hello', foo: 'bazz!' })
     i++
   }
 
-  // store.subscribe(subFirst, 'firstNode')
-  store.subscribe(subFirst, select.firstNode)
-  // store.subscribe(subGlobal)
+  // store.subscribe(subFirst, select.firstNode)
+  store.subscribe(subFirst, store.firstNode)
 
   store.increment()
   store.addNode({ id: 'hello' })
@@ -72,6 +70,7 @@ tape('basics', t => {
   console.log('STATE', store.get())
 
   t.equal(store.get().counter, 3)
+  t.equal(i, 3)
   t.end()
 
   function subGlobal(state) {

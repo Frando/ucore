@@ -1,4 +1,5 @@
-import buble from 'rollup-plugin-buble'
+// import buble from 'rollup-plugin-buble'
+import sucrase from 'rollup-plugin-sucrase'
 import cjs from 'rollup-plugin-commonjs'
 import globals from 'rollup-plugin-node-globals'
 import builtins from 'rollup-plugin-node-builtins'
@@ -6,9 +7,9 @@ import replace from 'rollup-plugin-replace'
 import resolve from 'rollup-plugin-node-resolve'
 
 export default {
-  input: 'client-react.js',
+  input: 'index.js',
   output: {
-    file: 'client-react.build.js',
+    file: 'dist/index.build.js',
     format: 'iife',
     sourcemap: true
   },
@@ -27,30 +28,9 @@ export default {
       'require(\'readable-stream\')': 'require(\'stream\')',
       'readable-stream': 'stream'
     }),
-    buble({
+    sucrase({
       exclude: /node_modules/,
-      objectAssign: 'Object.assign',
-      transforms: {
-        arrow: true,
-        classes: true, 
-        computedProperty: true, 
-        conciseMethodProperty: true, 
-        dangerousForOf: true, 
-        dangerousTaggedTemplateString: true, 
-        defaultParameter: true, 
-        destructuring: true, 
-        forOf: true, 
-        generator: false, 
-        letConst: true, 
-        modules: false, 
-        numericLiteral: true, 
-        parameterDestructuring: true, 
-        reservedProperties: true, 
-        spreadRest: true, 
-        stickyRegExp: true, 
-        templateString: true, 
-        unicodeRegExp: true
-      }
+      transforms: ['jsx']
     }),
     resolve({
       browser: true,

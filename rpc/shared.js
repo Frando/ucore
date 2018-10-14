@@ -16,32 +16,22 @@ function rpcPlugin (makeStream, core, opts, done) {
   let remoteApi = new Promise((resolve, reject) => (resolveRemoteApi = resolve))
 
   const listeners = {}
-  
-  core.decorate('take', (name, fn) => {
-    console.log('register take', name)
+
+  core.decorate('reply', (name, fn) => {
     listeners[name] = fn.bind(core)
   })
 
-  core.decorate('fetch', async function (name, req, opts) {
-    console.log('start fetch: ', name, req)
+  core.decorate('request', async function (name, req, opts) {
     const res = await remoteAction(name, req)
-    console.log('done fetch: ', name, res)
     return res
   })
+
+  core.decorate
 
   core.decorate('session', {})
 
   done()
 
-  function handle (stream) {
-    let rpcStream = hyperpc({
-      action: (name, req, cb) => onAction(name, req, cb)
-    })
-    pump(rpcStream, stream, rpcStream)
-    rpcStream.on('remote', (remote) => {
-      resolveRemoteApi(remote)
-    })
-  }
 
   function remoteAction (name, req) {
     return new Promise (async function (resolve, reject) {
@@ -54,7 +44,6 @@ function rpcPlugin (makeStream, core, opts, done) {
   }
 
   async function onAction (name, req, cb) {
-    console.log('onAction req', name, req)
     if (!listeners[name]) return console.log('Unhandled request: ' + name)
     try {
       const promise = listeners[name](req, cb)
@@ -65,5 +54,15 @@ function rpcPlugin (makeStream, core, opts, done) {
       console.log('CAUGHT', e)
       cb(e)
     }
+  }
+
+  function handle (stream) {
+    let rpcStream = hyperpc({
+      action: (name, req, cb) => onAction(name, req, cb)
+    })
+    pump(rpcStream, stream, rpcStream)
+    rpcStream.on('remote', (remote) => {
+      resolveRemoteApi(remote)
+    })
   }
 }
