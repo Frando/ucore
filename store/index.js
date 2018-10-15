@@ -15,7 +15,6 @@ async function store (core, opts) {
   })
 
   core.decorate('getStore', name => {
-    console.log('getStore', name, stores)
     return stores[name]
   })
 
