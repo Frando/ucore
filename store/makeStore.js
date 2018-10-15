@@ -1,6 +1,6 @@
 let produce = require('immer')
-let logger = require('./lib/logger')
-const util = require('./lib/util')
+let logger = require('../lib/logger')
+const util = require('../lib/util')
 
 // I hate the inconsistencies between es modules via rollup and require in node...
 // it's really hard these days to write isomorphic code.
@@ -11,15 +11,23 @@ const META = Symbol('ucore-store-meta')
 
 module.exports = makeStore
 
-function makeStore (initialState, actions = {}, select = {}, opts = {}) {
-  const isEqual = opts.compareFunc || defaultCompareFunc
+function makeStore (opts) {
+  const {
+    initialState = {},
+    actions = {},
+    select = {},
+    compareFunc = defaultCompareFunc,
+    name
+  } = opts
+
+  const isEqual = compareFunc || defaultCompareFunc
   let subscribers = []
   let state = initialState
 
   const store = {
     actions: {},
     select: {},
-    name: opts.name
+    name
   }
 
   store.subscribe = (fn, select, ...args) => {

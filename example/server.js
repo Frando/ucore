@@ -30,13 +30,13 @@ async function boot () {
 }
 
 function routes (app, opts, done) {
-  app.reply('test', async (req, res) => {
-    return req.toUpperCase() + ' world!'
+  app.rpc.reply('test', async (req, res) => {
+    return { string: req.string.toUpperCase() + ' world!' }
   })
 
   let cnt = 0
-  app.reply('node', async req => {
-    return 'node-' + cnt++
+  app.rpc.reply('node', async req => {
+    return { node: 'node-' + cnt++ }
   })
 
   done()

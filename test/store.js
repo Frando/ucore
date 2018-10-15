@@ -1,5 +1,5 @@
 const tape = require('tape')
-const makeStore = require('../store')
+const makeStore = require('../store/makeStore')
 
 const initialState = {
   counter: 0,
@@ -44,7 +44,7 @@ const select = {
   nodes: state => state.nodes
 }
 
-const store = makeStore(initialState, actions, select, { name: 'testStore' })
+const store = makeStore({ initialState, actions, select, name: 'testStore' })
 
 tape('basics', t => {
   console.log('STATE', store.get())

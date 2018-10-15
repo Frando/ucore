@@ -6,7 +6,7 @@ module.exports = {
   plugin: makeRpcPlugin(websocketClient)
 }
 
-function websocketClient (opts, handle) {
+function websocketClient (core, opts, handle) {
   const websocket = ws(opts.url)
   handle(websocket)
 

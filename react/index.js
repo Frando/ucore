@@ -57,6 +57,7 @@ export class Consumer extends React.PureComponent {
     return (
       <Context.Consumer>
         {(core => {
+          console.log('CORE', core)
           let realStore = core.getStore(store)
           return <Subscriber store={realStore} select={select} children={children} />
         })}

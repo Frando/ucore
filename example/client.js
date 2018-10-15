@@ -1,5 +1,5 @@
 const ucore = require('..')
-const makeStore = require('../store')
+const store = require('../store')
 const rpc = require('../rpc/client')
 
 module.exports = boot
@@ -8,17 +8,16 @@ function boot () {
   const app = ucore()
 
   app.register(rpc, { url: 'ws://localhost:10001' })
+  app.register(store)
   app.use(counterPlugin)
 
   return app
 }
 
 function counterPlugin (app, opts, done) {
-  const store = counterStore()
+  const store = app.makeStore('counter', counterStore())
 
-  app.addStore('counter', store)
-
-  app.reply('status', async req => store.addStatus(req))
+  app.rpc.reply('status', async req => store.addStatus(req))
 
   store.addStatus('init!')
 
@@ -37,8 +36,8 @@ function counterStore () {
   })
 
   const loadNode = () => (set, { core }) => {
-    core.request('node')
-      .then(node => set(draft => void draft.nodes.push(node)))
+    core.rpc.request('node')
+      .then(({ node }) => set(draft => void draft.nodes.push(node)))
   }
 
   const actions = {
@@ -60,7 +59,7 @@ function counterStore () {
     debouncedStatus: debounceArray(state => state.status, 10)
   }
 
-  return makeStore(initialState, actions, select)
+  return { initialState, actions, select }
 }
 
 function debounceArray(fn, pagesize) {
