@@ -82,7 +82,7 @@ function makeStore (opts) {
         let res = fn.bind({ draft })(...args)
 
         if (typeof res === 'function') {
-          res(set, { select, ...store })
+          res.bind(state)(set, { select, ...store })
           takeDraft = false
         }
       }, p => patches.push(p))

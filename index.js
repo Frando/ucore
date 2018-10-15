@@ -1,5 +1,6 @@
 const avvio = require('avvio')
 const util = require('./lib/util')
+const thunky = require('thunky')
 
 module.exports = ucore 
 
