@@ -4,8 +4,9 @@ import shallowEqual from 'shallowequal'
 const cleanProps = (props) => {
   let {
     children,
-    select,
     store,
+    select,
+    init,
     ...rest
   } = props
   return rest
@@ -14,15 +15,15 @@ const cleanProps = (props) => {
 export class Subscriber extends React.Component {
   constructor (props) {
     super()
-    const sel = props.store.select(props.select)
+    const sel = props.store.select(props.select, cleanProps(props))
     this.state = { sel }
     this.onUpdate = this.onUpdate.bind(this)
   }
 
   componentDidMount () {
-    this.props.store.subscribe(this.onUpdate, this.props.select)
+    this.props.store.subscribe(this.onUpdate, this.props.select, cleanProps(this.props))
     if (this.props.init) {
-      this.props.store.actions[this.props.init]
+      this.props.store.actions[this.props.init](cleanProps(this.props))
     }
   }
 
@@ -64,7 +65,8 @@ class WaitForStore extends React.Component {
 
   render () {
     if (!this.store) return <div>No store.</div>
-    return <Subscriber store={this.store} select={this.props.select} children={this.props.children} init={this.props.init} />
+    const { store, ...rest } = this.props
+    return <Subscriber store={this.store} {...rest} />
   }
 }
 
@@ -78,11 +80,11 @@ export const Provider = ({ core, children }) => (
 
 export class Consumer extends React.PureComponent {
   render () {
-    const { children, store, select, init } = this.props
+    const { store, ...rest } = this.props
     return (
       <Context.Consumer>
         {(core => {
-          if (core.getStore) return <Subscriber store={core.getStore(store)} select={select} children={children} init={init} />
+          if (core.getStore) return <Subscriber store={core.getStore(store)} {...rest} />
           else return <WaitForStore {...this.props} core={core} />
         })}
       </Context.Consumer>

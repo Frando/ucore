@@ -114,7 +114,7 @@ function makeStore (opts) {
       let oldSection = _select(oldState, select, ...args)
       let newSection = _select(newState, select, ...args)
       if (!isEqual(oldSection, newSection)) {
-        fn(newSection, store)
+        fn(newSection, oldSection, store)
         _subscribers.push(fn)
       }
     })
