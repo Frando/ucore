@@ -37,9 +37,11 @@ function rpcPlugin (makeStream, core, opts, done) {
       const api = await remoteApi
       req = req || {}
       const { stream, ...data } = req
+      log('request ->', type, req)
       api.request(type, data, stream, onReply)
 
       function onReply (type, err, data, stream) {
+        log('<- reply', type, { err, data, stream})
         if (err) reject(err)
         else resolve({ type, stream, ...data })
       }
@@ -51,6 +53,7 @@ function rpcPlugin (makeStream, core, opts, done) {
   async function onRequest (type, data, stream, session, reply) {
     if (!listeners[type]) return debug('Unhandled request: ' + type)
     const req = { type, stream, session, ...data }
+    log('<- request', type, req)
     try {
       const promise = listeners[type](req, done)
       if (promise && typeof promise.then === 'function') {
@@ -69,6 +72,8 @@ function rpcPlugin (makeStream, core, opts, done) {
         ...data
       } = res
 
+      log('reply ->', type, )
+
       reply(type, err, data, stream)
     }
   }
@@ -86,6 +91,17 @@ function rpcPlugin (makeStream, core, opts, done) {
       pump(rpcStream, stream, rpcStream)
       rpcStream.on('remote', remote => resolveRemoteApi(remote))
     }
+  }
+}
+
+function log (way, type, data) {
+  if (console.groupCollapsed) {
+    console.groupCollapsed('RPC: [%s] %s', way, type)
+    console.log(data)
+    console.groupEnd()
+  }
+  else {
+    debug(`[%s] %s - %o`, way, type, data)
   }
 }
 

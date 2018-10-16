@@ -18,5 +18,7 @@ function ucore (opts) {
     ucore.use(plugin.plugin, opts)
   }
 
+  ucore.debug = () => {}
+
   return ucore
 }
