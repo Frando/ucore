@@ -36,7 +36,7 @@ function makeStore (opts) {
   }
 
   store.unsubscribe = func => {
-    subscribers = subscribers.filter(({ fn }) => fn === func)
+    subscribers = subscribers.filter(({ fn }) => fn !== func)
   }
 
   store.get = () => state

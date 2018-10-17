@@ -33,8 +33,7 @@ export class Subscriber extends React.Component {
   }
 
   componentWillUnmount () {
-    if (this.unsubscribe) this.unsubscribe()
-    // this.props.store.unsubscribe(this.onUpdate)
+    this.unsubscribe()
   }
 
   onUpdate (sel) {
@@ -42,7 +41,9 @@ export class Subscriber extends React.Component {
   }
 
   shouldComponentUpdate (nextProps, nextState) {
-    if (!shallowEqual(this.props, nextProps)) return true
+    // Always update on prop change.
+    if (!shallowEqual(cleanProps(this.props), cleanProps(nextProps))) return true
+    // Never update if state is the same.
     if (shallowEqual(this.state.sel, nextState.sel)) return false
     return true
   }
@@ -58,28 +59,6 @@ export class Subscriber extends React.Component {
   }
 }
 
-class WaitForStore extends React.Component {
-  constructor (props) {
-    super()
-    this.state = {}
-    if (props.core.getStore) this.store = props.core.getStore(props.store)
-  }
-
-  componentDidMount () {
-    if (!this.store) {
-      this.props.core.ready(() => {
-        this.store = this.props.core.getStore(this.props.store)
-        this.setState({})
-      })
-    }
-  }
-
-  render () {
-    if (!this.store) return <div>No store.</div>
-    const { store, ...rest } = this.props
-    return <Subscriber store={this.store} {...rest} />
-  }
-}
 
 const Context = React.createContext()
 
@@ -93,12 +72,47 @@ export class Consumer extends React.PureComponent {
   render () {
     const { store, ...rest } = this.props
     return (
+      <WithCore>
+        {(core => <Subscriber store={core.getStore(store)} {...rest} />)}
+      </WithCore>
+    )
+  }
+}
+
+class AsyncCoreProxy extends React.PureComponent {
+  componentDidMount () {
+    if (!this.props.core.isReady) this.props.core.on('ready', () => this.forceUpdate())
+  }
+
+  render () {
+    if (!this.props.core.isReady) return <div>Loading</div>
+    return this.props.children(this.props.core)
+  }
+}
+
+export class WithCore extends React.PureComponent {
+  render () {
+    let { children } = this.props
+    return (
       <Context.Consumer>
-        {(core => {
-          if (core.getStore) return <Subscriber store={core.getStore(store)} {...rest} />
-          else return <WaitForStore {...this.props} core={core} />
-        })}
+        {core => {
+          return core.isReady ? children(core) : <AsyncCoreProxy core={core} children={children} />
+        }}
       </Context.Consumer>
+    )
+  }
+}
+
+export class WithStore extends React.PureComponent {
+  render () {
+    let { store, children } = this.props
+    return (
+      <WithCore>
+        {core => {
+          let realStore = core.getStore(store)
+          return children(realStore)
+        }}
+      </WithCore>
     )
   }
 }
