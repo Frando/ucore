@@ -21,14 +21,20 @@ export class Subscriber extends React.Component {
   }
 
   componentDidMount () {
-    this.props.store.subscribe(this.onUpdate, this.props.select, cleanProps(this.props))
+    this.subscribe()
+  }
+
+  subscribe () {
+    if (this.unsubscribe) this.unsubscribe()
+    this.unsubscribe = this.props.store.subscribe(this.onUpdate, this.props.select, cleanProps(this.props))
     if (this.props.init) {
       this.props.store.actions[this.props.init](cleanProps(this.props))
     }
   }
 
   componentWillUnmount () {
-    this.props.store.unsubscribe(this.onUpdate)
+    if (this.unsubscribe) this.unsubscribe()
+    // this.props.store.unsubscribe(this.onUpdate)
   }
 
   onUpdate (sel) {
@@ -36,8 +42,13 @@ export class Subscriber extends React.Component {
   }
 
   shouldComponentUpdate (nextProps, nextState) {
+    if (!shallowEqual(this.props, nextProps)) return true
     if (shallowEqual(this.state.sel, nextState.sel)) return false
     return true
+  }
+
+  componentDidUpdate (prevProps, prevState) {
+    if (!shallowEqual(prevProps, this.props)) this.subscribe()
   }
 
   render () {
