@@ -51,6 +51,7 @@ function makeStore (opts) {
     let prevState = state
     state = newState
     meta.subscribers = _callSubscribers(newState, prevState)
+    meta.store = store
 
     logger(newState, prevState, meta)
   }

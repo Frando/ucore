@@ -37,11 +37,11 @@ function rpcPlugin (makeStream, core, opts, done) {
       const api = await remoteApi
       req = req || {}
       const { stream, ...data } = req
-      log('request ->', type, req)
+      log('request', 'out', type, req)
       api.request(type, data, stream, onReply)
 
       function onReply (type, err, data, stream) {
-        log('<- reply', type, { err, data, stream})
+        log('reply', 'in', type, { err, data, stream})
         if (err) reject(err)
         else resolve({ type, stream, ...data })
       }
@@ -53,7 +53,7 @@ function rpcPlugin (makeStream, core, opts, done) {
   async function onRequest (type, data, stream, session, reply) {
     if (!listeners[type]) return debug('Unhandled request: ' + type)
     const req = { type, stream, session, ...data }
-    log('<- request', type, req)
+    log('request', 'in', type, req)
     try {
       const promise = listeners[type](req, done)
       if (promise && typeof promise.then === 'function') {
@@ -72,7 +72,7 @@ function rpcPlugin (makeStream, core, opts, done) {
         ...data
       } = res
 
-      log('reply ->', type, )
+      log('reply', 'out', type, res)
 
       reply(type, err, data, stream)
     }
@@ -94,14 +94,20 @@ function rpcPlugin (makeStream, core, opts, done) {
   }
 }
 
-function log (way, type, data) {
-  if (console.groupCollapsed) {
-    console.groupCollapsed('RPC: [%s] %s', way, type)
+function log (type, dir, name, data) {
+  if (typeof window !== 'undefined' && console.groupCollapsed) {
+    let color = dir === 'out' ? '#00e' : '#0a0'
+    dir = dir === 'out' ? '🡙' : '🡘'
+    type = type + ' '.repeat(8 - type.length)
+    console.groupCollapsed('%crpc: %s %s %c%s', `color: ${color}; font-weight: bold`, dir, type, 'color: black; font-weight: bold', name)
     console.log(data)
     console.groupEnd()
   }
   else {
-    debug(`[%s] %s - %o`, way, type, data)
+    dir = dir.toUpperCase()
+    let str = dir + ' ' + type
+    str = str + ' '.repeat(11 - str.length)
+    debug(`%s %s`, str, name)
   }
 }
 
