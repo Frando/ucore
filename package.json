@@ -1,6 +1,6 @@
 {
   "name": "ucore",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Tiny app and state container",
   "main": "index.js",
   "directories": {
