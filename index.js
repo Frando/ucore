@@ -2,7 +2,6 @@ const avvio = require('avvio')
 const util = require('./lib/util')
 const nanobus = require('nanobus')
 
-
 module.exports = ucore 
 
 function ucore (opts) {

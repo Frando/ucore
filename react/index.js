@@ -1,12 +1,21 @@
 import React from 'react'
 import shallowEqual from 'shallowequal'
 
+function isEmpty (obj) {
+  if (!obj) return true
+  if (Array.isArray(obj) && !obj.length) return true
+  if (typeof obj === 'object' && Object.getOwnPropertyNames(obj).length === 0) return true
+  return false
+}
+
 const cleanProps = (props) => {
   let {
     children,
     store,
     select,
-    init,
+    fetch,
+    fetchOnResult,
+    fetchOnChange,
     ...rest
   } = props
   return rest
@@ -15,29 +24,34 @@ const cleanProps = (props) => {
 export class Subscriber extends React.Component {
   constructor (props) {
     super()
+    this.onStoreChange = this.onStoreChange.bind(this)
+    this.fetchOnResult = props.fetchOnResult || isEmpty
     const sel = props.store.select(props.select, cleanProps(props))
     this.state = { sel }
-    this.onUpdate = this.onUpdate.bind(this)
   }
 
   componentDidMount () {
-    this.subscribe()
+    this.subscribe(this.state.sel)
   }
 
-  subscribe () {
+  subscribe (currentSel) {
+    let cleanedProps = cleanProps(this.props)
+
     if (this.unsubscribe) this.unsubscribe()
-    this.unsubscribe = this.props.store.subscribe(this.onUpdate, this.props.select, cleanProps(this.props))
-    if (this.props.init) {
-      this.props.store.actions[this.props.init](cleanProps(this.props))
+    this.unsubscribe = this.props.store.subscribe(this.onStoreChange, this.props.select, cleanedProps, true)
+
+    if (this.props.fetch) {
+      if (this.fetchOnResult(currentSel)) this.props.store.actions[this.props.fetch](cleanedProps)
     }
   }
 
   componentWillUnmount () {
+    this.willUnmount = true
     this.unsubscribe()
   }
 
-  onUpdate (sel) {
-    this.setState({ sel })
+  onStoreChange (sel) {
+    if (!this.willUnmount) this.setState({ sel })
   }
 
   shouldComponentUpdate (nextProps, nextState) {
@@ -49,7 +63,22 @@ export class Subscriber extends React.Component {
   }
 
   componentDidUpdate (prevProps, prevState) {
-    if (!shallowEqual(prevProps, this.props)) this.subscribe()
+    prevProps = cleanProps(prevProps)
+    const props = cleanProps(this.props)
+    let resubscribe = false
+    // Component was updated. This might mean that the query was changed. If so, resubscribe and update selection.
+    // First check refetchOnChange prop, either a function or an object to compare.
+    if (this.props.fetchOnChange) {
+      if (this.props.fetchOnChange === true) resubscribe = !shallowEqual(prevProps, props)
+      if (typeof this.props.fetchOnChange === 'function') resubscribe = this.props.fetchOnChange()
+      else if (!shallowEqual(prevProps.fetchOnChange, this.props.fetchOnChange)) resubscribe = true
+    } else resubscribe = !shallowEqual(prevProps, props)
+
+    if (resubscribe) {
+      const sel = this.props.store.select(this.props.select, props)
+      this.setState({ sel })
+      this.subscribe(sel)
+    }
   }
 
   render () {

@@ -30,8 +30,10 @@ function makeStore (opts) {
     name
   }
 
-  store.subscribe = (fn, select, ...args) => {
-    subscribers.push({ fn, select, args })
+  store.subscribe = (fn, select, props, getFirst) => {
+    subscribers.push({ fn, select, props})
+    if (getFirst) fn(_select(state, select, props), null, store)
+    
     return () => store.unsubscribe(fn)
   }
 
@@ -56,7 +58,7 @@ function makeStore (opts) {
     logger(newState, prevState, meta)
   }
 
-  store.select = (select, ...args) => _select(state, select, ...args)
+  store.select = (select, props) => _select(state, select, props)
 
   store.decorate = util.makeDecorate(store, 'store')
 
@@ -94,26 +96,26 @@ function makeStore (opts) {
     }
   }
 
-  function _select (state, select, ...args) {
+  function _select (state, select, props) {
     if (!select) {
       return state
     }
     if (Array.isArray(select)) {
-      return select.map(sel => _select(state, sel, ...args))
+      return select.map(sel => _select(state, sel, props))
     }
     if (typeof select === 'function') {
-      return select(state, ...args)
+      return select(state, props)
     }
     if (typeof select === 'string') {
-      return store.select[select](state, ...args)
+      return store.select[select](state, props)
     }
   }
 
   function _callSubscribers (newState, oldState) {
     let _subscribers = []
-    subscribers.forEach(({ fn, select, args }) => {
-      let oldSection = _select(oldState, select, ...args)
-      let newSection = _select(newState, select, ...args)
+    subscribers.forEach(({ fn, select, props }) => {
+      let oldSection = _select(oldState, select, props)
+      let newSection = _select(newState, select, props)
       if (!isEqual(oldSection, newSection)) {
         fn(newSection, oldSection, store)
         _subscribers.push(fn)
